@@ -23,20 +23,20 @@ func main() {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-
+			log.Println("Recieved Payload: ", event)
 			eventPayloadInBytes, err := json.Marshal(event)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-
-			payload := bytes.NewBuffer(eventPayloadInBytes)
-			postRes, _ := http.Post("http://localhost:3000/events", "application/json", payload)
-
+			postPayload := bytes.NewBuffer(eventPayloadInBytes)
+			postRes, _ := http.Post("http://localhost:3000/events", "application/json", postPayload)
 			defer postRes.Body.Close()
-			//commentRes, _ := http.Post("http.//localhost:3001/events", "application/json", payload)
-			//
-			//defer commentRes.Body.Close()
+
+			commentPayload := bytes.NewBuffer(eventPayloadInBytes)
+			commentRes, _ := http.Post("http://localhost:3001/events", "application/json", commentPayload)
+			defer commentRes.Body.Close()
+
 			w.WriteHeader(http.StatusOK)
 
 		} else {

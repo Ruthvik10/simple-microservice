@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -11,6 +13,11 @@ import (
 type Comment struct {
 	ID   int    `json:"id"`
 	Text string `json:"text"`
+}
+
+type Event struct {
+	ID   string `json:"id"`
+	Data any    `json:"data"`
 }
 
 func main() {
@@ -39,6 +46,25 @@ func main() {
 			return
 		}
 		res = append(res, '\n')
+
+		event := Event{
+			ID: "CommentCreated",
+			Data: struct {
+				Comment
+				PostID int `json:"post_id"`
+			}{comment, postID},
+		}
+
+		eventPayloadInBytes, err := json.Marshal(event)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		eventPayload := bytes.NewBuffer(eventPayloadInBytes)
+		eventBusRes, _ := http.Post("http://localhost:3005/events", "application/json", eventPayload)
+		defer eventBusRes.Body.Close()
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		w.Write(res)
@@ -59,6 +85,17 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(res)
+	}))
+
+	r.Post("/events", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		res, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		log.Println("Recieved Payload")
+		log.Println(string(res))
+		w.WriteHeader(http.StatusOK)
 	}))
 
 	log.Println("starting the comments server on 3001")

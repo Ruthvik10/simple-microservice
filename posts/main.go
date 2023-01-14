@@ -52,7 +52,8 @@ func main() {
 			return
 		}
 		eventPayload := bytes.NewBuffer(eventPayloadInBytes)
-		http.Post("http://localhost:3005/events", "application/json", eventPayload)
+		eventBusRes, _ := http.Post("http://localhost:3005/events", "application/json", eventPayload)
+		defer eventBusRes.Body.Close()
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
@@ -72,11 +73,13 @@ func main() {
 	}))
 
 	r.Post("/events", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := ioutil.ReadAll(r.Body)
+		res, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		log.Println("Recieved Payload")
+		log.Println(string(res))
 		w.WriteHeader(http.StatusOK)
 	}))
 
