@@ -37,6 +37,10 @@ func main() {
 			commentRes, _ := http.Post("http://localhost:3001/events", "application/json", commentPayload)
 			defer commentRes.Body.Close()
 
+			queryPayload := bytes.NewBuffer(eventPayloadInBytes)
+			queryRes, _ := http.Post("http://localhost:3002/events", "application/json", queryPayload)
+			defer queryRes.Body.Close()
+
 			w.WriteHeader(http.StatusOK)
 
 		} else {
