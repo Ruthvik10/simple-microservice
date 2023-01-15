@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
 )
 
 type Comment struct {
-	ID   int    `json:"id"`
-	Text string `json:"text"`
+	ID     int    `json:"id"`
+	Text   string `json:"text"`
+	Status string `json:"status"`
+	PostID int    `json:"post_id"`
 }
 
 type Event struct {
@@ -40,6 +41,8 @@ func main() {
 		}
 		comment.ID = len(comments[postID]) + 1
 		comments[postID] = append(comments[postID], comment)
+		comment.Status = "pending"
+		comment.PostID = postID
 		res, err := json.Marshal(comment)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -48,11 +51,8 @@ func main() {
 		res = append(res, '\n')
 
 		event := Event{
-			ID: "CommentCreated",
-			Data: struct {
-				Comment
-				PostID int `json:"post_id"`
-			}{comment, postID},
+			ID:   "CommentCreated",
+			Data: comment,
 		}
 
 		eventPayloadInBytes, err := json.Marshal(event)
@@ -88,13 +88,54 @@ func main() {
 	}))
 
 	r.Post("/events", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		res, err := ioutil.ReadAll(r.Body)
+		var event Event
+		err := json.NewDecoder(r.Body).Decode(&event)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		log.Println("Recieved Payload")
-		log.Println(string(res))
+		log.Println(event)
+
+		switch event.ID {
+		case "CommentModerated":
+			data, err := json.Marshal(event.Data)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			var comment Comment
+			err = json.Unmarshal(data, &comment)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			commentsOfAPost := comments[comment.PostID]
+			commentIndex := -1
+
+			for i, c := range commentsOfAPost {
+				if c.ID == comment.ID {
+					commentIndex = i
+					break
+				}
+			}
+			commentsOfAPost[commentIndex] = comment
+
+			event := Event{
+				ID:   "CommentUpdated",
+				Data: comment,
+			}
+
+			eventPayloadInBytes, err := json.Marshal(event)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			eventPayload := bytes.NewBuffer(eventPayloadInBytes)
+			eventBusRes, _ := http.Post("http://localhost:3005/events", "application/json", eventPayload)
+			defer eventBusRes.Body.Close()
+		}
 		w.WriteHeader(http.StatusOK)
 	}))
 

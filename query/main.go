@@ -22,6 +22,7 @@ type Comment struct {
 	ID     int    `json:"id"`
 	Text   string `json:"text"`
 	PostID int    `json:"post_id"`
+	Status string `json:"status"`
 }
 
 type PostWithComments map[int]*Post
@@ -67,6 +68,29 @@ func main() {
 			}
 			if p, ok := posts[comment.PostID]; ok {
 				p.Comments = append(p.Comments, comment)
+			} else {
+				http.Error(w, "post not found", http.StatusNotFound)
+				return
+			}
+		case "CommentUpdated":
+			data, err := json.Marshal(event.Data)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			var comment Comment
+			err = json.Unmarshal(data, &comment)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			if p, ok := posts[comment.PostID]; ok {
+				for i, c := range p.Comments {
+					if c.ID == comment.ID {
+						p.Comments[i] = comment
+						break
+					}
+				}
 			} else {
 				http.Error(w, "post not found", http.StatusNotFound)
 				return
