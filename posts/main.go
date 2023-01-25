@@ -25,7 +25,7 @@ func main() {
 
 	r := chi.NewRouter()
 
-	r.Post("/posts", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	r.Post("/posts/create", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var post Post
 		err := json.NewDecoder(r.Body).Decode(&post)
 		if err != nil {
@@ -52,7 +52,7 @@ func main() {
 			return
 		}
 		eventPayload := bytes.NewBuffer(eventPayloadInBytes)
-		eventBusRes, _ := http.Post("http://localhost:3005/events", "application/json", eventPayload)
+		eventBusRes, _ := http.Post("http://event-bus-srv:3005/events", "application/json", eventPayload)
 		defer eventBusRes.Body.Close()
 
 		w.Header().Set("Content-Type", "application/json")

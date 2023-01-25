@@ -62,7 +62,7 @@ func main() {
 		}
 
 		eventPayload := bytes.NewBuffer(eventPayloadInBytes)
-		eventBusRes, _ := http.Post("http://localhost:3005/events", "application/json", eventPayload)
+		eventBusRes, _ := http.Post("http://event-bus-srv:3005/events", "application/json", eventPayload)
 		defer eventBusRes.Body.Close()
 
 		w.Header().Set("Content-Type", "application/json")
@@ -133,7 +133,7 @@ func main() {
 				return
 			}
 			eventPayload := bytes.NewBuffer(eventPayloadInBytes)
-			eventBusRes, _ := http.Post("http://localhost:3005/events", "application/json", eventPayload)
+			eventBusRes, _ := http.Post("http://event-bus-srv:3005/events", "application/json", eventPayload)
 			defer eventBusRes.Body.Close()
 		}
 		w.WriteHeader(http.StatusOK)

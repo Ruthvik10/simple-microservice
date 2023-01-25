@@ -35,26 +35,26 @@ func main() {
 
 			go func(wg *sync.WaitGroup) {
 				postPayload := bytes.NewBuffer(eventPayloadInBytes)
-				postRes, _ := http.Post("http://localhost:3000/events", "application/json", postPayload)
+				postRes, _ := http.Post("http://posts-clusterip-srv:3000/events", "application/json", postPayload)
 				defer wg.Done()
 				defer postRes.Body.Close()
 			}(&wg)
 			go func(wg *sync.WaitGroup) {
 				commentPayload := bytes.NewBuffer(eventPayloadInBytes)
-				commentRes, _ := http.Post("http://localhost:3001/events", "application/json", commentPayload)
+				commentRes, _ := http.Post("http://comments-srv:3001/events", "application/json", commentPayload)
 				defer wg.Done()
 				defer commentRes.Body.Close()
 			}(&wg)
 			go func(wg *sync.WaitGroup) {
 				queryPayload := bytes.NewBuffer(eventPayloadInBytes)
-				queryRes, _ := http.Post("http://localhost:3002/events", "application/json", queryPayload)
+				queryRes, _ := http.Post("http://query-srv:3002/events", "application/json", queryPayload)
 				defer wg.Done()
 				defer queryRes.Body.Close()
 			}(&wg)
 
 			go func(wg *sync.WaitGroup) {
 				moderationPayload := bytes.NewBuffer(eventPayloadInBytes)
-				moderationRes, _ := http.Post("http://localhost:3003/events", "application/json", moderationPayload)
+				moderationRes, _ := http.Post("http://moderation-srv:3003/events", "application/json", moderationPayload)
 				defer wg.Done()
 				defer moderationRes.Body.Close()
 			}(&wg)
